@@ -244,6 +244,4 @@ On PC0:
 ipconfig /release
 ipconfig /renew
 
-git config --global user.name "shelter-hosea"
-git config --global user.email "shelter.hosea@gmail.com"
 
