@@ -1,0 +1,40 @@
+! ==============================
+! Device: R3
+! Role: Router / DHCP Server
+! ==============================
+
+enable
+configure terminal
+
+! ----- Interfaces -----
+interface g0/0
+ ip address 13.0.0.3 255.0.0.0
+ no shutdown
+exit
+
+interface g0/1
+ ip address 14.0.0.3 255.0.0.0
+ no shutdown
+exit
+
+! ----- DHCP -----
+ip dhcp excluded-address 10.0.0.1 10.0.0.20
+ip dhcp excluded-address 11.0.0.1 11.0.0.20
+
+ip dhcp pool VLAN10
+ network 10.0.0.0 255.0.0.0
+ default-router 10.0.0.254
+ dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN11
+ network 11.0.0.0 255.0.0.0
+ default-router 11.0.0.254
+ dns-server 8.8.8.8
+exit
+
+! ----- OSPF -----
+router ospf 1
+ network 13.0.0.0 0.255.255.255 area 0
+ network 14.0.0.0 0.255.255.255 area 0
+exit

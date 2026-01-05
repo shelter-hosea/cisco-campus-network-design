@@ -1,0 +1,249 @@
+1. MLS1 — VTP SERVER (authoritative)
+enable
+configure terminal
+
+vtp domain ACN
+vtp mode server
+vtp version 2
+vtp password cisco123
+exit
+
+
+vlan 10
+ name IT
+vlan 11
+ name HR
+exit
+
+2. MLS2, MLS3, MLS4 — VTP CLIENTS
+enable
+configure terminal
+
+vtp domain ACN
+vtp mode client
+vtp version 2
+vtp password cisco123
+exit
+
+
+int ran g1/0/22 - 24
+switchport mode trunk
+no shut
+
+
+PHASE 2 — ACCESS LAYER (PC CONNECTIVITY)
+3. MLS3 (PC0, PC1)
+configure terminal
+
+interface range gi1/0/1 - 6
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+exit
+
+interface range gi1/0/7 - 12
+ switchport mode access
+ switchport access vlan 11
+ spanning-tree portfast
+exit
+
+
+4. MLS4 (PC2, PC3)
+configure terminal
+
+interface range gi1/0/1 - 6
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+exit
+
+interface range gi1/0/7 - 12
+ switchport mode access
+ switchport access vlan 11
+ spanning-tree portfast
+exit
+
+
+PHASE 3 — ETHERCHANNELS
+5. Layer 2 EtherChannels (Access ↔ Distribution)
+MLS3 ↔ MLS1 (PortChannel 1)
+&
+
+interface range gi1/0/23 - 24
+ switchport
+ channel-group 1 mode active
+exit
+
+interface port-channel1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,11
+exit
+
+
+MLS2 ↔ MLS4
+
+interface range gi1/0/23 - 24
+ switchport
+ channel-group 4 mode active
+exit
+
+interface port-channel4
+ switchport mode trunk
+ switchport trunk allowed vlan 10,11
+exit
+
+
+6. Layer 3 EtherChannel (MLS1 ↔ MLS2)
+
+MLS1
+interface range gi1/0/20 - 21
+ no switchport
+ channel-group 3 mode active
+exit
+
+interface port-channel3
+ no switchport
+ ip address 12.0.0.1 255.255.0.0
+ no shutdown
+exit
+
+MLS2
+interface range gi1/0/20 - 21
+ no switchport
+ channel-group 3 mode active
+exit
+
+interface port-channel3
+ no switchport
+ ip address 12.0.0.2 255.255.0.0
+ no shutdown
+exit
+
+
+PHASE 4 — INTER-VLAN ROUTING + HSRP
+7. Enable routing on MLS1 & MLS2
+
+configure terminal
+ip routing
+
+8. SVIs + HSRP
+MLS1
+
+interface vlan 10
+ ip address 10.0.0.1 255.0.0.0
+ standby 10 ip 10.0.0.254
+ standby 10 priority 110
+ standby 10 preempt
+exit
+
+interface vlan 11
+ ip address 11.0.0.1 255.0.0.0
+ standby 11 ip 11.0.0.254
+ standby 11 priority 90
+ standby 11 preempt
+exit
+
+interface gi1/0/19
+ no switchport
+ ip address 13.0.0.1 255.0.0.0
+ no shutdown
+exit
+
+
+
+MLS2
+interface vlan 10
+ ip address 10.0.0.2 255.0.0.0
+ standby 10 ip 10.0.0.254
+ standby 10 priority 90
+ standby 10 preempt
+exit
+
+interface vlan 11
+ ip address 11.0.0.2 255.0.0.0
+ standby 11 ip 11.0.0.254
+ standby 11 priority 110
+ standby 11 preempt
+exit
+
+interface gi1/0/19
+ no switchport
+ ip address 14.0.0.1 255.0.0.0
+ no shutdown
+exit
+
+
+PHASE 5 — ROUTER + DHCP + ROUTING
+9. Router R3 — Interfaces
+
+enable
+configure terminal
+
+interface g0/0
+ ip address 13.0.0.3 255.0.0.0
+ no shutdown
+exit
+
+interface g0/1
+ ip address 14.0.0.3 255.0.0.0
+ no shutdown
+exit
+
+10. DHCP (PCs get IPs)
+ip dhcp excluded-address 10.0.0.1 10.0.0.20
+ip dhcp excluded-address 11.0.0.1 11.0.0.20
+
+ip dhcp pool VLAN10
+ network 10.0.0.0 255.0.0.0
+ default-router 10.0.0.254
+ dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN11
+ network 11.0.0.0 255.0.0.0C 
+ default-router 11.0.0.254
+ dns-server 8.8.8.8
+exit
+
+
+11. OSPF (end-to-end routing)
+R3
+router ospf 1
+ network 13.0.0.0 0.255.255.255 area 0
+ network 14.0.0.0 0.255.255.255 area 0
+exit
+MLS1
+router ospf 1
+ network 10.0.0.0 0.255.255.255 area 0
+ network 11.0.0.0 0.255.255.255 area 0
+ network 12.0.0.0 0.0.255.255 area 0
+ network 13.0.0.0 0.255.255.255 area 0
+exit
+
+MLS2
+router ospf 1
+ network 10.0.0.0 0.255.255.255 area 0
+ network 11.0.0.0 0.255.255.255 area 0
+ network 12.0.0.0 0.0.255.255 area 0
+ network 14.0.0.0 0.255.255.255 area 0
+exit
+
+STEP 3 — FIX DHCP RETURN PATH (COMMONLY MISSED)On MLS1 & MLS2 (SVIs)
+
+interface vlan 10
+ ip helper-address 13.0.0.3
+exit
+
+interface vlan 11
+ ip helper-address 13.0.0.3
+exit
+
+STEP 4 — RENEW THE PC
+
+On PC0:
+ipconfig /release
+ipconfig /renew
+
+git config --global user.name "shelter-hosea"
+git config --global user.email "shelter.hosea@gmail.com"
+

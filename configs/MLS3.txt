@@ -1,0 +1,38 @@
+! ==============================
+! Device: MLS3
+! Role: Access Switch
+! ==============================
+
+enable
+configure terminal
+
+! ----- VTP (Client) -----
+vtp domain ACN
+vtp mode client
+vtp version 2
+vtp password cisco123
+
+! ----- Access Ports -----
+interface range gi1/0/1 - 6
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+exit
+
+interface range gi1/0/7 - 12
+ switchport mode access
+ switchport access vlan 11
+ spanning-tree portfast
+exit
+
+! ----- EtherChannel to MLS1 -----
+interface range gi1/0/23 - 24
+ switchport
+ channel-group 1 mode active
+ no shutdown
+exit
+
+interface port-channel1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,11
+exit

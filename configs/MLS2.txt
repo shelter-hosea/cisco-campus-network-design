@@ -1,0 +1,60 @@
+! ==============================
+! Device: MLS2
+! Role: Distribution Switch
+! ==============================
+
+enable
+configure terminal
+
+! ----- VTP (Client) -----
+vtp domain ACN
+vtp mode client
+vtp version 2
+vtp password cisco123
+
+! ----- Enable Routing -----
+ip routing
+
+! ----- SVIs + HSRP -----
+interface vlan 10
+ ip address 10.0.0.2 255.0.0.0
+ standby 10 ip 10.0.0.254
+ standby 10 priority 90
+ standby 10 preempt
+ ip helper-address 13.0.0.3
+exit
+
+interface vlan 11
+ ip address 11.0.0.2 255.0.0.0
+ standby 11 ip 11.0.0.254
+ standby 11 priority 110
+ standby 11 preempt
+ ip helper-address 13.0.0.3
+exit
+
+! ----- Layer 3 EtherChannel to MLS1 -----
+interface range gi1/0/20 - 21
+ no switchport
+ channel-group 3 mode active
+exit
+
+interface port-channel3
+ no switchport
+ ip address 12.0.0.2 255.255.0.0
+ no shutdown
+exit
+
+! ----- Link to Router -----
+interface gi1/0/19
+ no switchport
+ ip address 14.0.0.1 255.0.0.0
+ no shutdown
+exit
+
+! ----- OSPF -----
+router ospf 1
+ network 10.0.0.0 0.255.255.255 area 0
+ network 11.0.0.0 0.255.255.255 area 0
+ network 12.0.0.0 0.0.255.255 area 0
+ network 14.0.0.0 0.255.255.255 area 0
+exit
