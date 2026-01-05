@@ -411,3 +411,48 @@ Broadcast-based services such as DHCP require relay configuration in routed envi
 
 
 * Verification is as important as configuration
+
+
+
+cisco-campus-network-design/
+
+│
+
+├── README.md
+
+├── configs/
+
+│   ├── MLS1.txt
+
+│   ├── MLS2.txt
+
+│   ├── MLS3.txt
+
+│   ├── MLS4.txt
+
+│   └── R3.txt
+
+│
+
+├── diagrams/
+
+│   └── topology.png
+
+│
+
+├── verification/
+
+│   └── verification-commands.txt
+
+│
+
+└── notes/
+
+&nbsp;   └── troubleshooting.md
+
+
+
+
+
+
+
